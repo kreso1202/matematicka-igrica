@@ -15,7 +15,14 @@
     <script type="text/babel">
         const { useState, useEffect } = React;
 
-        // Lucide icons as simple SVG components
+        // JsonBin Configuration
+        const JSONBIN_CONFIG = {
+            apiKey: '$2a$10$31RITG3SmDIKuboB6WgUdurK6MSbN1lxd7wpIZWNq.TVm8JkRvHi.',
+            binId: '68bf0f7ad0ea881f40764962',
+            baseUrl: 'https://api.jsonbin.io/v3'
+        };
+
+        // Icons
         const Star = ({ className = "", size = 24, ...props }) => (
             <svg {...props} className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26" />
@@ -46,93 +53,245 @@
             </svg>
         );
 
+        const User = ({ className = "", size = 24, ...props }) => (
+            <svg {...props} className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                <circle cx="12" cy="7" r="4" />
+            </svg>
+        );
+
+        const Download = ({ className = "", size = 24, ...props }) => (
+            <svg {...props} className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7,10 12,15 17,10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+        );
+
+        const Cloud = ({ className = "", size = 24, ...props }) => (
+            <svg {...props} className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10Z" />
+            </svg>
+        );
+
+        const Wifi = ({ className = "", size = 24, ...props }) => (
+            <svg {...props} className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M5 13a10 10 0 0 1 14 0" />
+                <path d="M8.5 16.5a5 5 0 0 1 7 0" />
+                <path d="M12 20h.01" />
+            </svg>
+        );
+
+        const WifiOff = ({ className = "", size = 24, ...props }) => (
+            <svg {...props} className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M1 1l22 22" />
+                <path d="M8.5 16.5a5 5 0 0 1 7 0" />
+                <path d="M12 20h.01" />
+                <path d="M2 8.82a15 15 0 0 1 4.17-2.65" />
+                <path d="M10.66 5c4.01-.36 8.14.9 11.34 3.76" />
+                <path d="M16.85 11.25a10 10 0 0 1 2.22 1.68" />
+            </svg>
+        );
+
+        // Level definitions
+        const LEVELS = [
+            { id: 1, name: "Početnik", emoji: "🌱", operations: ['+', '-'], maxNum: 20, questionsNeeded: 10, timeLimit: 20 },
+            { id: 2, name: "Istraživač", emoji: "🔍", operations: ['+', '-'], maxNum: 50, questionsNeeded: 15, timeLimit: 18 },
+            { id: 3, name: "Učenik", emoji: "📚", operations: ['+', '-', '×'], maxNum: 100, questionsNeeded: 20, timeLimit: 16 },
+            { id: 4, name: "Matematičar", emoji: "🧮", operations: ['+', '-', '×', '÷'], maxNum: 144, questionsNeeded: 25, timeLimit: 15 },
+            { id: 5, name: "Stručnjak", emoji: "🎓", operations: ['+', '-', '×', '÷'], maxNum: 200, questionsNeeded: 30, timeLimit: 14 },
+            { id: 6, name: "Majstor", emoji: "👑", operations: ['+', '-', '×', '÷'], maxNum: 500, questionsNeeded: 35, timeLimit: 13 },
+            { id: 7, name: "Genij", emoji: "🧠", operations: ['+', '-', '×', '÷'], maxNum: 1000, questionsNeeded: 40, timeLimit: 12 }
+        ];
+
         const MathGame = () => {
-            const [gameState, setGameState] = useState('menu');
+            const [gameState, setGameState] = useState('welcome');
+            const [playerName, setPlayerName] = useState('');
             const [currentQuestion, setCurrentQuestion] = useState('');
             const [answer, setAnswer] = useState('');
             const [correctAnswer, setCorrectAnswer] = useState(0);
             const [score, setScore] = useState(0);
-            const [timeLeft, setTimeLeft] = useState(15);
+            const [timeLeft, setTimeLeft] = useState(20);
             const [lives, setLives] = useState(3);
-            const [level, setLevel] = useState(1);
-            const [bestScore, setBestScore] = useState(() => {
-                return parseInt(localStorage.getItem('mathGameBestScore') || '0');
-            });
+            const [currentLevel, setCurrentLevel] = useState(1);
+            const [questionsInLevel, setQuestionsInLevel] = useState(0);
             const [streak, setStreak] = useState(0);
             const [showFeedback, setShowFeedback] = useState('');
-            const [difficulty, setDifficulty] = useState('easy');
+            const [sessionStats, setSessionStats] = useState({ correct: 0, wrong: 0, timeouts: 0 });
+            const [isOnline, setIsOnline] = useState(true);
+            const [isLoading, setIsLoading] = useState(false);
 
-            // Save best score to localStorage
+            // Cloud data
+            const [cloudData, setCloudData] = useState({ players: {}, lastUpdate: null });
+            const [localData, setLocalData] = useState(() => {
+                const saved = localStorage.getItem('mathGamePlayers');
+                return saved ? JSON.parse(saved) : {};
+            });
+
+            // Check if JsonBin is configured
+            const isJsonBinConfigured = () => {
+                return JSONBIN_CONFIG.apiKey !== '$2a$10$Q3Z8Q3Z8Q3Z8Q3Z8Q3Z8Qu' && 
+                       JSONBIN_CONFIG.binId !== 'your-bin-id';
+            };
+
+            // JsonBin API calls
+            const loadFromCloud = async () => {
+                if (!isJsonBinConfigured()) {
+                    console.log('JsonBin nije konfiguriran, koristimo lokalne podatke');
+                    return;
+                }
+
+                setIsLoading(true);
+                try {
+                    const response = await fetch(`${JSONBIN_CONFIG.baseUrl}/b/${JSONBIN_CONFIG.binId}/latest`, {
+                        method: 'GET',
+                        headers: {
+                            'X-Master-Key': JSONBIN_CONFIG.apiKey,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        setCloudData(data.record || { players: {}, lastUpdate: null });
+                        setIsOnline(true);
+                        console.log('Podaci učitani iz oblaka');
+                    } else {
+                        throw new Error('Greška pri dohvaćanju podataka');
+                    }
+                } catch (error) {
+                    console.error('Greška pri dohvaćanju iz oblaka:', error);
+                    setIsOnline(false);
+                } finally {
+                    setIsLoading(false);
+                }
+            };
+
+            const saveToCloud = async (newData) => {
+                if (!isJsonBinConfigured()) {
+                    console.log('JsonBin nije konfiguriran, spremamo lokalno');
+                    return false;
+                }
+
+                try {
+                    const dataToSave = {
+                        players: newData,
+                        lastUpdate: new Date().toISOString()
+                    };
+
+                    const response = await fetch(`${JSONBIN_CONFIG.baseUrl}/b/${JSONBIN_CONFIG.binId}`, {
+                        method: 'PUT',
+                        headers: {
+                            'X-Master-Key': JSONBIN_CONFIG.apiKey,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(dataToSave)
+                    });
+
+                    if (response.ok) {
+                        setCloudData(dataToSave);
+                        setIsOnline(true);
+                        console.log('Podaci spremljeni u oblak');
+                        return true;
+                    } else {
+                        throw new Error('Greška pri spremanju');
+                    }
+                } catch (error) {
+                    console.error('Greška pri spremanju u oblak:', error);
+                    setIsOnline(false);
+                    return false;
+                }
+            };
+
+            // Initialize - load from cloud on start
             useEffect(() => {
-                localStorage.setItem('mathGameBestScore', bestScore.toString());
-            }, [bestScore]);
+                loadFromCloud();
+            }, []);
+
+            // Save local data
+            useEffect(() => {
+                localStorage.setItem('mathGamePlayers', JSON.stringify(localData));
+            }, [localData]);
+
+            // Merge cloud and local data
+            const getAllPlayers = () => {
+                const merged = { ...localData };
+                
+                if (isJsonBinConfigured() && cloudData.players) {
+                    Object.keys(cloudData.players).forEach(playerName => {
+                        const cloudPlayer = cloudData.players[playerName];
+                        const localPlayer = merged[playerName];
+                        
+                        if (!localPlayer || cloudPlayer.bestScore > localPlayer.bestScore) {
+                            merged[playerName] = cloudPlayer;
+                        }
+                    });
+                }
+                
+                return merged;
+            };
+
+            const getCurrentLevelData = () => LEVELS.find(l => l.id === currentLevel);
 
             const generateQuestion = () => {
-                const operations = ['+', '-', '×', '÷'];
+                const levelData = getCurrentLevelData();
+                const operations = levelData.operations;
                 const operation = operations[Math.floor(Math.random() * operations.length)];
                 let num1, num2, result, question;
 
-                if (difficulty === 'easy') {
-                    switch (operation) {
-                        case '+':
-                            num1 = Math.floor(Math.random() * 20) + 1;
-                            num2 = Math.floor(Math.random() * 20) + 1;
-                            result = num1 + num2;
-                            question = `${num1} + ${num2}`;
-                            break;
-                        case '-':
-                            num1 = Math.floor(Math.random() * 30) + 10;
+                switch (operation) {
+                    case '+':
+                        if (levelData.id <= 2) {
+                            num1 = Math.floor(Math.random() * levelData.maxNum) + 1;
+                            num2 = Math.floor(Math.random() * levelData.maxNum) + 1;
+                        } else {
+                            num1 = Math.floor(Math.random() * (levelData.maxNum / 2)) + 1;
+                            num2 = Math.floor(Math.random() * (levelData.maxNum / 2)) + 1;
+                        }
+                        result = num1 + num2;
+                        question = `${num1} + ${num2}`;
+                        break;
+                    case '-':
+                        if (levelData.id <= 2) {
+                            num1 = Math.floor(Math.random() * levelData.maxNum) + 10;
                             num2 = Math.floor(Math.random() * num1) + 1;
-                            result = num1 - num2;
-                            question = `${num1} - ${num2}`;
-                            break;
-                        case '×':
+                        } else {
+                            num1 = Math.floor(Math.random() * levelData.maxNum) + 20;
+                            num2 = Math.floor(Math.random() * (num1 - 10)) + 1;
+                        }
+                        result = num1 - num2;
+                        question = `${num1} - ${num2}`;
+                        break;
+                    case '×':
+                        if (levelData.id === 3) {
                             num1 = Math.floor(Math.random() * 10) + 1;
                             num2 = Math.floor(Math.random() * 10) + 1;
-                            result = num1 * num2;
-                            question = `${num1} × ${num2}`;
-                            break;
-                        case '÷':
-                            num2 = Math.floor(Math.random() * 10) + 1;
-                            result = Math.floor(Math.random() * 10) + 1;
-                            num1 = num2 * result;
-                            question = `${num1} ÷ ${num2}`;
-                            break;
-                    }
-                } else if (difficulty === 'medium') {
-                    switch (operation) {
-                        case '+':
-                            num1 = Math.floor(Math.random() * 50) + 1;
-                            num2 = Math.floor(Math.random() * 50) + 1;
-                            result = num1 + num2;
-                            question = `${num1} + ${num2}`;
-                            break;
-                        case '-':
-                            num1 = Math.floor(Math.random() * 50) + 20;
-                            num2 = Math.floor(Math.random() * num1) + 1;
-                            result = num1 - num2;
-                            question = `${num1} - ${num2}`;
-                            break;
-                        case '×':
+                        } else {
                             num1 = Math.floor(Math.random() * 12) + 1;
                             num2 = Math.floor(Math.random() * 12) + 1;
-                            result = num1 * num2;
-                            question = `${num1} × ${num2}`;
-                            break;
-                        case '÷':
+                        }
+                        result = num1 * num2;
+                        question = `${num1} × ${num2}`;
+                        break;
+                    case '÷':
+                        if (levelData.id === 4) {
+                            num2 = Math.floor(Math.random() * 10) + 1;
+                            result = Math.floor(Math.random() * 10) + 1;
+                        } else {
                             num2 = Math.floor(Math.random() * 12) + 1;
                             result = Math.floor(Math.random() * 12) + 1;
-                            num1 = num2 * result;
-                            question = `${num1} ÷ ${num2}`;
-                            break;
-                    }
+                        }
+                        num1 = num2 * result;
+                        question = `${num1} ÷ ${num2}`;
+                        break;
                 }
 
                 setCurrentQuestion(question);
                 setCorrectAnswer(result);
-                setTimeLeft(15);
+                setTimeLeft(levelData.timeLimit);
             };
 
+            // Timer
             useEffect(() => {
                 if (gameState === 'playing' && timeLeft > 0) {
                     const timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
@@ -145,6 +304,7 @@
             const handleTimeout = () => {
                 setLives(lives - 1);
                 setStreak(0);
+                setSessionStats(prev => ({ ...prev, timeouts: prev.timeouts + 1 }));
                 setShowFeedback('timeout');
                 setTimeout(() => {
                     setShowFeedback('');
@@ -159,19 +319,35 @@
 
             const checkAnswer = () => {
                 const userAnswer = parseInt(answer);
+                const levelData = getCurrentLevelData();
+                
                 if (userAnswer === correctAnswer) {
-                    const points = 10 + (streak * 2) + (timeLeft * 1);
+                    const timeBonus = timeLeft * 2;
+                    const streakBonus = streak * 5;
+                    const levelBonus = currentLevel * 10;
+                    const points = 20 + timeBonus + streakBonus + levelBonus;
+                    
                     setScore(score + points);
                     setStreak(streak + 1);
+                    setQuestionsInLevel(questionsInLevel + 1);
+                    setSessionStats(prev => ({ ...prev, correct: prev.correct + 1 }));
                     setShowFeedback('correct');
                     
-                    if (streak + 1 >= 10 && level < 3) {
-                        setLevel(level + 1);
-                        setDifficulty(level === 1 ? 'medium' : 'hard');
+                    // Check level completion
+                    if (questionsInLevel + 1 >= levelData.questionsNeeded) {
+                        setTimeout(() => {
+                            if (currentLevel < LEVELS.length) {
+                                setGameState('levelComplete');
+                            } else {
+                                endGame(); // Completed all levels!
+                            }
+                        }, 1500);
+                        return;
                     }
                 } else {
                     setLives(lives - 1);
                     setStreak(0);
+                    setSessionStats(prev => ({ ...prev, wrong: prev.wrong + 1 }));
                     setShowFeedback('wrong');
                 }
 
@@ -190,129 +366,281 @@
                 setGameState('playing');
                 setScore(0);
                 setLives(3);
-                setLevel(1);
+                setCurrentLevel(1);
+                setQuestionsInLevel(0);
                 setStreak(0);
-                setDifficulty('easy');
+                setSessionStats({ correct: 0, wrong: 0, timeouts: 0 });
                 generateQuestion();
             };
 
-            const endGame = () => {
+            const nextLevel = () => {
+                setCurrentLevel(currentLevel + 1);
+                setQuestionsInLevel(0);
+                setLives(3); // Restore lives for new level
+                setGameState('playing');
+                generateQuestion();
+            };
+
+            const endGame = async () => {
                 setGameState('gameOver');
-                if (score > bestScore) {
-                    setBestScore(score);
+                
+                // Create new result
+                const newResult = {
+                    date: new Date().toLocaleDateString('hr-HR'),
+                    time: new Date().toLocaleTimeString('hr-HR'),
+                    score: score,
+                    level: currentLevel,
+                    stats: sessionStats
+                };
+
+                const allPlayers = getAllPlayers();
+                const updatedPlayerData = {
+                    ...allPlayers,
+                    [playerName]: {
+                        name: playerName,
+                        bestScore: Math.max(score, allPlayers[playerName]?.bestScore || 0),
+                        maxLevel: Math.max(currentLevel, allPlayers[playerName]?.maxLevel || 1),
+                        gamesPlayed: (allPlayers[playerName]?.gamesPlayed || 0) + 1,
+                        results: [...(allPlayers[playerName]?.results || []), newResult].slice(-10)
+                    }
+                };
+
+                // Save locally first
+                setLocalData(updatedPlayerData);
+
+                // Try to save to cloud
+                if (isJsonBinConfigured()) {
+                    await saveToCloud(updatedPlayerData);
                 }
             };
 
-            const getStars = () => {
-                if (score >= 500) return 3;
-                if (score >= 200) return 2;
-                if (score >= 50) return 1;
-                return 0;
+            const exportResults = () => {
+                const allPlayers = getAllPlayers();
+                const data = JSON.stringify(allPlayers, null, 2);
+                const blob = new Blob([data], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `matematicka-igrica-rezultati-${new Date().toISOString().split('T')[0]}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
             };
 
-            const getLevelName = () => {
-                if (level === 1) return 'Početnik';
-                if (level === 2) return 'Srednji';
-                return 'Stručnjak';
+            const getTopPlayers = () => {
+                const allPlayers = getAllPlayers();
+                return Object.values(allPlayers)
+                    .sort((a, b) => b.bestScore - a.bestScore)
+                    .slice(0, 10);
+            };
+
+            const getLevelProgress = () => {
+                const levelData = getCurrentLevelData();
+                return Math.min((questionsInLevel / levelData.questionsNeeded) * 100, 100);
+            };
+
+            const refreshCloudData = async () => {
+                await loadFromCloud();
             };
 
             return (
                 <div className="min-h-screen bg-gradient-to-br from-purple-400 via-pink-400 to-yellow-400 flex items-center justify-center p-4">
                     <div className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-md">
                         
-                        {gameState === 'menu' && (
+                        {/* Cloud Status */}
+                        {isJsonBinConfigured() && (
+                            <div className="flex items-center justify-between mb-4 p-2 bg-gray-50 rounded-lg text-sm">
+                                <div className="flex items-center gap-2">
+                                    {isOnline ? (
+                                        <>
+                                            <Wifi className="text-green-500" size={16} />
+                                            <span className="text-green-700">Online natjecanje</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <WifiOff className="text-orange-500" size={16} />
+                                            <span className="text-orange-700">Offline način</span>
+                                        </>
+                                    )}
+                                </div>
+                                {isLoading && <div className="text-blue-500">🔄</div>}
+                            </div>
+                        )}
+
+                        {!isJsonBinConfigured() && (
+                            <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm">
+                                <div className="flex items-center gap-2 text-yellow-800">
+                                    <Cloud size={16} />
+                                    <span>Lokalni način - podaci se spremaju samo na ovom uređaju</span>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Welcome Screen */}
+                        {gameState === 'welcome' && (
                             <div className="text-center">
                                 <div className="mb-6">
                                     <h1 className="text-4xl font-bold text-purple-600 mb-2">🧮 Matematička Igrica</h1>
-                                    <p className="text-gray-600">Vježbaj tablicu množenja i računanje!</p>
+                                    <p className="text-gray-600">
+                                        {isJsonBinConfigured() ? 'Dobrodošli u online natjecanje!' : 'Dobrodošli u svijet brojeva!'}
+                                    </p>
                                 </div>
                                 
-                                {bestScore > 0 && (
-                                    <div className="bg-yellow-100 rounded-xl p-4 mb-6">
-                                        <div className="flex items-center justify-center gap-2 mb-2">
-                                            <Trophy className="text-yellow-600" size={24} />
-                                            <span className="text-lg font-bold text-yellow-800">Najbolji rezultat: {bestScore}</span>
-                                        </div>
-                                        <div className="flex justify-center gap-1">
-                                            {[...Array(3)].map((_, i) => (
-                                                <Star 
-                                                    key={i} 
-                                                    className={`w-6 h-6 ${i < getStars() ? 'text-yellow-500 fill-current' : 'text-gray-300'}`} 
-                                                />
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
+                                <div className="mb-6">
+                                    <User className="mx-auto text-purple-500 mb-4" size={48} />
+                                    <label className="block text-lg font-bold text-gray-700 mb-2">
+                                        Unesite svoje ime i prezime:
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={playerName}
+                                        onChange={(e) => setPlayerName(e.target.value)}
+                                        className="w-full p-3 border-2 border-purple-300 rounded-xl focus:border-purple-500 focus:outline-none text-center text-lg"
+                                        placeholder="Ana Anić"
+                                        onKeyPress={(e) => e.key === 'Enter' && playerName.trim() && setGameState('menu')}
+                                    />
+                                </div>
                                 
                                 <button 
-                                    onClick={startGame}
-                                    className="bg-gradient-to-r from-green-400 to-blue-500 text-white font-bold py-4 px-8 rounded-full text-xl hover:scale-105 transform transition-all duration-200 shadow-lg"
+                                    onClick={() => playerName.trim() && setGameState('menu')}
+                                    disabled={!playerName.trim()}
+                                    className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold py-4 px-8 rounded-full text-xl hover:scale-105 transform transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                    🚀 Pokreni igru!
+                                    Nastavi 🚀
                                 </button>
                             </div>
                         )}
 
+                        {/* Main Menu */}
+                        {gameState === 'menu' && (
+                            <div className="text-center">
+                                <div className="mb-6">
+                                    <h2 className="text-3xl font-bold text-purple-600 mb-2">
+                                        Pozdrav, {playerName}! 👋
+                                    </h2>
+                                    <p className="text-gray-600">Što želite raditi?</p>
+                                </div>
+
+                                {(() => {
+                                    const allPlayers = getAllPlayers();
+                                    const player = allPlayers[playerName];
+                                    if (player) {
+                                        return (
+                                            <div className="bg-blue-100 rounded-xl p-4 mb-6">
+                                                <div className="text-sm text-blue-800 mb-2">
+                                                    🏆 Najbolji rezultat: <strong>{player.bestScore}</strong>
+                                                </div>
+                                                <div className="text-sm text-blue-800 mb-2">
+                                                    📊 Maksimalni nivo: <strong>{player.maxLevel}</strong>
+                                                </div>
+                                                <div className="text-sm text-blue-800">
+                                                    🎮 Odigrano igara: <strong>{player.gamesPlayed}</strong>
+                                                </div>
+                                            </div>
+                                        );
+                                    }
+                                    return null;
+                                })()}
+
+                                <div className="space-y-4">
+                                    <button 
+                                        onClick={startGame}
+                                        className="w-full bg-gradient-to-r from-green-400 to-blue-500 text-white font-bold py-4 px-8 rounded-xl text-xl hover:scale-105 transform transition-all duration-200"
+                                    >
+                                        🎮 Nova igra
+                                    </button>
+                                    
+                                    <button 
+                                        onClick={() => setGameState('leaderboard')}
+                                        className="w-full bg-gradient-to-r from-yellow-400 to-orange-500 text-white font-bold py-3 px-6 rounded-xl text-lg hover:scale-105 transform transition-all duration-200"
+                                    >
+                                        🏆 {isJsonBinConfigured() ? 'Online ljestvica' : 'Najbolji igrači'}
+                                    </button>
+
+                                    <button 
+                                        onClick={() => setGameState('welcome')}
+                                        className="w-full bg-gray-400 text-white font-bold py-3 px-6 rounded-xl text-lg hover:scale-105 transform transition-all duration-200"
+                                    >
+                                        👤 Promijeni ime
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Game Screen */}
                         {gameState === 'playing' && (
                             <div className="text-center">
-                                <div className="flex justify-between items-center mb-6">
+                                {/* Header */}
+                                <div className="flex justify-between items-center mb-4">
                                     <div className="flex gap-1">
                                         {[...Array(3)].map((_, i) => (
                                             <Heart 
                                                 key={i} 
-                                                className={`w-6 h-6 ${i < lives ? 'text-red-500 fill-current' : 'text-gray-300'}`} 
+                                                className={`w-5 h-5 ${i < lives ? 'text-red-500 fill-current' : 'text-gray-300'}`} 
                                             />
                                         ))}
                                     </div>
                                     <div className="text-lg font-bold text-purple-600">
-                                        {score} bodova
+                                        {score} 🌟
                                     </div>
                                 </div>
 
-                                <div className="flex justify-between mb-4">
-                                    <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-bold">
-                                        Razina: {getLevelName()}
-                                    </span>
+                                {/* Level Info */}
+                                <div className="mb-4">
+                                    <div className="flex items-center justify-center gap-2 mb-2">
+                                        <span className="text-2xl">{getCurrentLevelData().emoji}</span>
+                                        <span className="font-bold text-lg text-purple-700">
+                                            Nivo {currentLevel}: {getCurrentLevelData().name}
+                                        </span>
+                                    </div>
+                                    
+                                    {/* Progress Bar */}
+                                    <div className="w-full bg-gray-200 rounded-full h-3 mb-2">
+                                        <div 
+                                            className="bg-gradient-to-r from-green-400 to-blue-500 h-3 rounded-full transition-all duration-500"
+                                            style={{ width: `${getLevelProgress()}%` }}
+                                        ></div>
+                                    </div>
+                                    <div className="text-sm text-gray-600">
+                                        {questionsInLevel}/{getCurrentLevelData().questionsNeeded} zadataka
+                                    </div>
+                                </div>
+
+                                {/* Timer and Streak */}
+                                <div className="flex justify-between items-center mb-6">
+                                    <div className="flex items-center gap-2">
+                                        <Clock className="text-blue-500" size={18} />
+                                        <span className={`text-lg font-bold ${timeLeft <= 5 ? 'text-red-500' : 'text-blue-500'}`}>
+                                            {timeLeft}s
+                                        </span>
+                                    </div>
                                     {streak > 0 && (
                                         <span className="bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-sm font-bold">
-                                            🔥 Niz: {streak}
+                                            🔥 {streak}
                                         </span>
                                     )}
                                 </div>
 
+                                {/* Question */}
                                 <div className="mb-6">
-                                    <div className="flex items-center justify-center gap-2 mb-2">
-                                        <Clock className="text-blue-500" size={20} />
-                                        <span className={`text-xl font-bold ${timeLeft <= 5 ? 'text-red-500' : 'text-blue-500'}`}>
-                                            {timeLeft}s
-                                        </span>
-                                    </div>
-                                    <div className="w-full bg-gray-200 rounded-full h-2">
-                                        <div 
-                                            className={`h-2 rounded-full transition-all duration-1000 ${timeLeft <= 5 ? 'bg-red-500' : 'bg-blue-500'}`}
-                                            style={{ width: `${(timeLeft / 15) * 100}%` }}
-                                        ></div>
-                                    </div>
-                                </div>
-
-                                <div className="mb-6">
-                                    <div className="text-4xl font-bold text-gray-800 mb-4 p-6 bg-gray-50 rounded-xl">
+                                    <div className="text-3xl font-bold text-gray-800 mb-4 p-6 bg-gray-50 rounded-xl">
                                         {currentQuestion} = ?
                                     </div>
                                 </div>
 
+                                {/* Feedback */}
                                 {showFeedback && (
                                     <div className={`mb-4 p-4 rounded-xl font-bold text-lg ${
                                         showFeedback === 'correct' ? 'bg-green-100 text-green-800' :
                                         showFeedback === 'wrong' ? 'bg-red-100 text-red-800' :
                                         'bg-orange-100 text-orange-800'
                                     }`}>
-                                        {showFeedback === 'correct' && '🎉 Bravo! Točno!'}
-                                        {showFeedback === 'wrong' && `❌ Netočno! Odgovor je ${correctAnswer}`}
+                                        {showFeedback === 'correct' && '🎉 Odlično!'}
+                                        {showFeedback === 'wrong' && `❌ Odgovor je ${correctAnswer}`}
                                         {showFeedback === 'timeout' && '⏰ Vrijeme je isteklo!'}
                                     </div>
                                 )}
 
+                                {/* Input */}
                                 <div className="mb-6">
                                     <input
                                         type="number"
@@ -320,43 +648,107 @@
                                         onChange={(e) => setAnswer(e.target.value)}
                                         onKeyPress={(e) => e.key === 'Enter' && answer && checkAnswer()}
                                         className="w-full text-2xl text-center p-4 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:outline-none"
-                                        placeholder="Upiši odgovor..."
+                                        placeholder="Vaš odgovor..."
                                         disabled={showFeedback !== ''}
+                                        autoFocus
                                     />
                                 </div>
 
+                                {/* Submit Button */}
                                 <button 
                                     onClick={checkAnswer}
                                     disabled={!answer || showFeedback !== ''}
                                     className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold py-4 px-6 rounded-xl text-xl hover:scale-105 transform transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                    ✓ Potvrdi odgovor
+                                    ✓ Potvrdi
                                 </button>
                             </div>
                         )}
 
+                        {/* Level Complete */}
+                        {gameState === 'levelComplete' && (
+                            <div className="text-center">
+                                <div className="mb-6">
+                                    <div className="text-6xl mb-4">🎉</div>
+                                    <h2 className="text-3xl font-bold text-purple-600 mb-2">
+                                        Nivo završen!
+                                    </h2>
+                                    <p className="text-lg text-gray-600 mb-4">
+                                        Uspješno ste završili <strong>Nivo {currentLevel}</strong>!
+                                    </p>
+                                    
+                                    <div className="bg-green-100 rounded-xl p-6 mb-6">
+                                        <div className="text-lg font-bold text-green-800 mb-2">
+                                            Vaš rezultat: {score} 🌟
+                                        </div>
+                                        <div className="text-sm text-green-700">
+                                            Točni odgovori: {sessionStats.correct} ✅<br/>
+                                            Niz: {streak} 🔥
+                                        </div>
+                                    </div>
+
+                                    {currentLevel < LEVELS.length && (
+                                        <div className="bg-blue-100 rounded-xl p-4 mb-6">
+                                            <div className="text-lg font-bold text-blue-800 mb-2">
+                                                Sljedeći nivo: {LEVELS[currentLevel].emoji} {LEVELS[currentLevel].name}
+                                            </div>
+                                            <div className="text-sm text-blue-700">
+                                                Potrebno: {LEVELS[currentLevel].questionsNeeded} zadataka<br/>
+                                                Vrijeme: {LEVELS[currentLevel].timeLimit}s po zadatku
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="space-y-3">
+                                    {currentLevel < LEVELS.length ? (
+                                        <button 
+                                            onClick={nextLevel}
+                                            className="w-full bg-gradient-to-r from-green-400 to-blue-500 text-white font-bold py-4 px-6 rounded-xl text-lg hover:scale-105 transform transition-all duration-200"
+                                        >
+                                            🚀 Sljedeći nivo
+                                        </button>
+                                    ) : (
+                                        <div className="bg-yellow-100 rounded-xl p-6">
+                                            <div className="text-2xl font-bold text-yellow-800 mb-2">
+                                                🏆 Čestitamo! 🏆
+                                            </div>
+                                            <div className="text-sm text-yellow-700">
+                                                Završili ste sve nivoe!
+                                            </div>
+                                        </div>
+                                    )}
+                                    
+                                    <button 
+                                        onClick={() => setGameState('menu')}
+                                        className="w-full bg-gray-500 text-white font-bold py-3 px-6 rounded-xl text-lg hover:scale-105 transform transition-all duration-200"
+                                    >
+                                        🏠 Glavni meni
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Game Over */}
                         {gameState === 'gameOver' && (
                             <div className="text-center">
                                 <div className="mb-6">
                                     <h2 className="text-3xl font-bold text-purple-600 mb-4">🎮 Igra završena!</h2>
                                     <div className="bg-purple-100 rounded-xl p-6 mb-4">
                                         <div className="text-2xl font-bold text-purple-800 mb-2">
-                                            Tvoj rezultat: {score}
+                                            Rezultat: {score} 🌟
                                         </div>
-                                        <div className="flex justify-center gap-1 mb-2">
-                                            {[...Array(3)].map((_, i) => (
-                                                <Star 
-                                                    key={i} 
-                                                    className={`w-8 h-8 ${i < getStars() ? 'text-yellow-500 fill-current' : 'text-gray-300'}`} 
-                                                />
-                                            ))}
+                                        <div className="text-lg text-purple-700 mb-2">
+                                            Dostignuti nivo: {currentLevel}
                                         </div>
                                         <div className="text-sm text-purple-600">
-                                            {score >= 500 ? '🏆 Nevjerojatan rezultat!' :
-                                             score >= 200 ? '🥈 Odličan posao!' :
-                                             score >= 50 ? '🥉 Dobro odrađeno!' :
-                                             '💪 Nastavi vježbati!'}
+                                            ✅ Točno: {sessionStats.correct} | ❌ Netočno: {sessionStats.wrong} | ⏰ Timeout: {sessionStats.timeouts}
                                         </div>
+                                        {isJsonBinConfigured() && isOnline && (
+                                            <div className="text-xs text-green-600 mt-2">
+                                                ☁️ Rezultat spremljen u oblak
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
 
@@ -365,13 +757,91 @@
                                         onClick={startGame}
                                         className="w-full bg-gradient-to-r from-green-400 to-blue-500 text-white font-bold py-4 px-6 rounded-xl text-lg hover:scale-105 transform transition-all duration-200"
                                     >
-                                        🔄 Igraj ponovno
+                                        🔄 Nova igra
                                     </button>
                                     <button 
                                         onClick={() => setGameState('menu')}
                                         className="w-full bg-gray-500 text-white font-bold py-3 px-6 rounded-xl text-lg hover:scale-105 transform transition-all duration-200"
                                     >
-                                        🏠 Povratak na menu
+                                        🏠 Glavni meni
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Leaderboard */}
+                        {gameState === 'leaderboard' && (
+                            <div className="text-center">
+                                <div className="mb-6">
+                                    <div className="flex items-center justify-center gap-2 mb-4">
+                                        <h2 className="text-3xl font-bold text-purple-600">🏆</h2>
+                                        <h2 className="text-3xl font-bold text-purple-600">
+                                            {isJsonBinConfigured() ? 'Online ljestvica' : 'Najbolji igrači'}
+                                        </h2>
+                                    </div>
+                                    {isJsonBinConfigured() && (
+                                        <div className="flex items-center justify-center gap-2 mb-4">
+                                            <button 
+                                                onClick={refreshCloudData}
+                                                disabled={isLoading}
+                                                className="text-blue-500 hover:text-blue-700 flex items-center gap-1"
+                                            >
+                                                {isLoading ? '🔄' : '🔄'} Osvježi
+                                            </button>
+                                            {cloudData.lastUpdate && (
+                                                <span className="text-xs text-gray-500">
+                                                    Zadnje ažuriranje: {new Date(cloudData.lastUpdate).toLocaleString('hr-HR')}
+                                                </span>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="mb-6 max-h-80 overflow-y-auto">
+                                    {getTopPlayers().length > 0 ? (
+                                        getTopPlayers().map((player, index) => (
+                                            <div key={index} className={`p-3 rounded-xl mb-2 ${
+                                                index === 0 ? 'bg-yellow-100 border-2 border-yellow-400' :
+                                                index === 1 ? 'bg-gray-100 border-2 border-gray-400' :
+                                                index === 2 ? 'bg-orange-100 border-2 border-orange-400' :
+                                                'bg-blue-50'
+                                            }`}>
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-xl">
+                                                            {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`}
+                                                        </span>
+                                                        <span className={`font-bold ${player.name === playerName ? 'text-purple-600' : ''}`}>
+                                                            {player.name}
+                                                            {player.name === playerName && ' (Vi)'}
+                                                        </span>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <div className="font-bold text-purple-600">{player.bestScore} 🌟</div>
+                                                        <div className="text-xs text-gray-600">Nivo {player.maxLevel}</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <div className="text-gray-500">Nema još zabilježenih rezultata</div>
+                                    )}
+                                </div>
+
+                                <div className="space-y-3">
+                                    <button 
+                                        onClick={exportResults}
+                                        disabled={getTopPlayers().length === 0}
+                                        className="w-full bg-green-500 text-white font-bold py-3 px-6 rounded-xl text-lg hover:scale-105 transform transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                    >
+                                        <Download size={20} />
+                                        Izvezi rezultate
+                                    </button>
+                                    <button 
+                                        onClick={() => setGameState('menu')}
+                                        className="w-full bg-gray-500 text-white font-bold py-3 px-6 rounded-xl text-lg hover:scale-105 transform transition-all duration-200"
+                                    >
+                                        🏠 Povratak
                                     </button>
                                 </div>
                             </div>
