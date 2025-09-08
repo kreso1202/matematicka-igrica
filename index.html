@@ -598,6 +598,88 @@
                             </div>
                         )}
 
+                        {/* Achievements Screen */}
+                        {gameState === 'achievements' && (
+                            <div className="text-center">
+                                <div className="mb-6">
+                                    <h2 className="text-3xl font-bold text-purple-600 mb-4">Postignuća</h2>
+                                    <p className="text-gray-600">Vaši uspjesi u učenju matematike</p>
+                                </div>
+
+                                {(() => {
+                                    const playerData = getCurrentPlayerData();
+                                    const playerAchievements = playerData.achievements || [];
+                                    
+                                    return (
+                                        <div className="mb-6 max-h-80 overflow-y-auto space-y-3">
+                                            {ACHIEVEMENTS.map((achievement, index) => {
+                                                const isUnlocked = playerAchievements.includes(achievement.id);
+                                                return (
+                                                    <div key={index} className={`p-4 rounded-xl border-2 ${
+                                                        isUnlocked 
+                                                            ? 'bg-green-100 border-green-400' 
+                                                            : 'bg-gray-100 border-gray-300 opacity-60'
+                                                    }`}>
+                                                        <div className="flex items-center gap-4">
+                                                            <div className="text-3xl">
+                                                                {isUnlocked ? achievement.emoji : '🔒'}
+                                                            </div>
+                                                            <div className="flex-1 text-left">
+                                                                <div className={`font-bold ${
+                                                                    isUnlocked ? 'text-green-800' : 'text-gray-600'
+                                                                }`}>
+                                                                    {achievement.name}
+                                                                </div>
+                                                                <div className={`text-sm ${
+                                                                    isUnlocked ? 'text-green-700' : 'text-gray-500'
+                                                                }`}>
+                                                                    {achievement.desc}
+                                                                </div>
+                                                            </div>
+                                                            {isUnlocked && (
+                                                                <div className="text-green-600 font-bold">
+                                                                    ✓
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    );
+                                })()}
+
+                                <div className="bg-blue-100 rounded-xl p-4 mb-6">
+                                    <div className="text-lg font-bold text-blue-800 mb-2">
+                                        Napredak: {(() => {
+                                            const playerData = getCurrentPlayerData();
+                                            const unlockedCount = (playerData.achievements || []).length;
+                                            return `${unlockedCount}/${ACHIEVEMENTS.length}`;
+                                        })()} postignuća
+                                    </div>
+                                    <div className="w-full bg-blue-200 rounded-full h-3">
+                                        <div 
+                                            className="bg-blue-600 h-3 rounded-full transition-all duration-500"
+                                            style={{ 
+                                                width: `${(() => {
+                                                    const playerData = getCurrentPlayerData();
+                                                    const unlockedCount = (playerData.achievements || []).length;
+                                                    return (unlockedCount / ACHIEVEMENTS.length) * 100;
+                                                })()}%` 
+                                            }}
+                                        ></div>
+                                    </div>
+                                </div>
+
+                                <button 
+                                    onClick={() => setGameState('menu')}
+                                    className="w-full bg-gray-500 text-white font-bold py-3 px-6 rounded-xl text-lg hover:scale-105 transform transition-all duration-200"
+                                >
+                                    Povratak
+                                </button>
+                            </div>
+                        )}
+
                         {/* Game Screen */}
                         {gameState === 'playing' && (
                             <div className="text-center">
