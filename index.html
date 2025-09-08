@@ -105,6 +105,7 @@
         ];
 
         const MathGame = () => {
+            // All state variables
             const [gameState, setGameState] = useState('welcome');
             const [playerName, setPlayerName] = useState('');
             const [currentQuestion, setCurrentQuestion] = useState('');
@@ -128,13 +129,12 @@
                 return saved ? JSON.parse(saved) : {};
             });
 
-            // Check if JsonBin is configured
+            // JsonBin functions
             const isJsonBinConfigured = () => {
                 return JSONBIN_CONFIG.apiKey !== '$2a$10$Q3Z8Q3Z8Q3Z8Q3Z8Q3Z8Qu' && 
                        JSONBIN_CONFIG.binId !== 'your-bin-id';
             };
 
-            // JsonBin API calls
             const loadFromCloud = async () => {
                 if (!isJsonBinConfigured()) {
                     console.log('JsonBin nije konfiguriran, koristimo lokalne podatke');
@@ -203,34 +203,7 @@
                 }
             };
 
-            // Initialize - load from cloud on start
-            useEffect(() => {
-                loadFromCloud();
-            }, []);
-
-            // Save local data
-            useEffect(() => {
-                localStorage.setItem('mathGamePlayers', JSON.stringify(localData));
-            }, [localData]);
-
-            // Merge cloud and local data
-            const getAllPlayers = () => {
-                const merged = { ...localData };
-                
-                if (isJsonBinConfigured() && cloudData.players) {
-                    Object.keys(cloudData.players).forEach(playerName => {
-                        const cloudPlayer = cloudData.players[playerName];
-                        const localPlayer = merged[playerName];
-                        
-                        if (!localPlayer || cloudPlayer.bestScore > localPlayer.bestScore) {
-                            merged[playerName] = cloudPlayer;
-                        }
-                    });
-                }
-                
-                return merged;
-            };
-
+            // Game functions
             const getCurrentLevelData = () => LEVELS.find(l => l.id === currentLevel);
 
             const generateQuestion = () => {
@@ -291,30 +264,29 @@
                 setTimeLeft(levelData.timeLimit);
             };
 
-            // Timer
-            useEffect(() => {
-                if (gameState === 'playing' && timeLeft > 0) {
-                    const timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
-                    return () => clearTimeout(timer);
-                } else if (timeLeft === 0 && gameState === 'playing') {
-                    handleTimeout();
-                }
-            }, [timeLeft, gameState]);
-
-            const handleTimeout = () => {
-                setLives(lives - 1);
+            const startGame = () => {
+                setGameState('playing');
+                setScore(0);
+                setLives(3);
+                setCurrentLevel(1);
+                setQuestionsInLevel(0);
                 setStreak(0);
-                setSessionStats(prev => ({ ...prev, timeouts: prev.timeouts + 1 }));
-                setShowFeedback('timeout');
+                setAnswer('');
+                setShowFeedback('');
+                setSessionStats({ correct: 0, wrong: 0, timeouts: 0 });
+                generateQuestion();
+            };
+
+            const nextLevel = () => {
+                setAnswer('');
+                setShowFeedback('');
+                setCurrentLevel(currentLevel + 1);
+                setQuestionsInLevel(0);
+                setLives(3);
+                setGameState('playing');
                 setTimeout(() => {
-                    setShowFeedback('');
-                    if (lives - 1 <= 0) {
-                        endGame();
-                    } else {
-                        generateQuestion();
-                        setAnswer('');
-                    }
-                }, 1500);
+                    generateQuestion();
+                }, 100);
             };
 
             const checkAnswer = () => {
@@ -333,65 +305,61 @@
                     setSessionStats(prev => ({ ...prev, correct: prev.correct + 1 }));
                     setShowFeedback('correct');
                     
-                    // Check level completion
                     if (questionsInLevel + 1 >= levelData.questionsNeeded) {
                         setTimeout(() => {
+                            setAnswer('');
+                            setShowFeedback('');
                             if (currentLevel < LEVELS.length) {
                                 setGameState('levelComplete');
                             } else {
-                                endGame(); // Completed all levels!
+                                endGame();
                             }
-                        }, 1500);
+                        }, 1000);
                         return;
                     }
+                    
+                    setTimeout(() => {
+                        setShowFeedback('');
+                        setAnswer('');
+                        generateQuestion();
+                    }, 1500);
                 } else {
                     setLives(lives - 1);
                     setStreak(0);
                     setSessionStats(prev => ({ ...prev, wrong: prev.wrong + 1 }));
                     setShowFeedback('wrong');
+                    
+                    setTimeout(() => {
+                        setShowFeedback('');
+                        if (lives - 1 <= 0) {
+                            endGame();
+                        } else {
+                            setAnswer('');
+                            generateQuestion();
+                        }
+                    }, 1500);
                 }
+            };
 
+            const handleTimeout = () => {
+                setLives(lives - 1);
+                setStreak(0);
+                setSessionStats(prev => ({ ...prev, timeouts: prev.timeouts + 1 }));
+                setShowFeedback('timeout');
                 setTimeout(() => {
                     setShowFeedback('');
-                    if (lives - (userAnswer !== correctAnswer ? 1 : 0) <= 0) {
+                    if (lives - 1 <= 0) {
                         endGame();
                     } else {
-                        setAnswer(''); // Reset input before new question
+                        setAnswer('');
                         generateQuestion();
                     }
                 }, 1500);
             };
 
-            const startGame = () => {
-                setIsTransitioning(true);
-                setGameState('playing');
-                setScore(0);
-                setLives(3);
-                setCurrentLevel(1);
-                setQuestionsInLevel(0);
-                setStreak(0);
-                setAnswer('');
-                setShowFeedback('');
-                setSessionStats({ correct: 0, wrong: 0, timeouts: 0 });
-                
-                setTimeout(() => {
-                    generateQuestion();
-                    setIsTransitioning(false);
-                }, 300);
-            };
-
-            const nextLevel = () => {
-                setCurrentLevel(currentLevel + 1);
-                setQuestionsInLevel(0);
-                setLives(3); // Restore lives for new level
-                setGameState('playing');
-                generateQuestion();
-            };
-
             const endGame = async () => {
                 setGameState('gameOver');
                 
-                // Create new result
                 const newResult = {
                     date: new Date().toLocaleDateString('hr-HR'),
                     time: new Date().toLocaleTimeString('hr-HR'),
@@ -412,25 +380,28 @@
                     }
                 };
 
-                // Save locally first
                 setLocalData(updatedPlayerData);
 
-                // Try to save to cloud
                 if (isJsonBinConfigured()) {
                     await saveToCloud(updatedPlayerData);
                 }
             };
 
-            const exportResults = () => {
-                const allPlayers = getAllPlayers();
-                const data = JSON.stringify(allPlayers, null, 2);
-                const blob = new Blob([data], { type: 'application/json' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `matematicka-igrica-rezultati-${new Date().toISOString().split('T')[0]}.json`;
-                a.click();
-                URL.revokeObjectURL(url);
+            const getAllPlayers = () => {
+                const merged = { ...localData };
+                
+                if (isJsonBinConfigured() && cloudData.players) {
+                    Object.keys(cloudData.players).forEach(playerName => {
+                        const cloudPlayer = cloudData.players[playerName];
+                        const localPlayer = merged[playerName];
+                        
+                        if (!localPlayer || cloudPlayer.bestScore > localPlayer.bestScore) {
+                            merged[playerName] = cloudPlayer;
+                        }
+                    });
+                }
+                
+                return merged;
             };
 
             const getTopPlayers = () => {
@@ -445,9 +416,39 @@
                 return Math.min((questionsInLevel / levelData.questionsNeeded) * 100, 100);
             };
 
+            const exportResults = () => {
+                const allPlayers = getAllPlayers();
+                const data = JSON.stringify(allPlayers, null, 2);
+                const blob = new Blob([data], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `matematicka-igrica-rezultati-${new Date().toISOString().split('T')[0]}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+            };
+
             const refreshCloudData = async () => {
                 await loadFromCloud();
             };
+
+            // Effects
+            useEffect(() => {
+                loadFromCloud();
+            }, []);
+
+            useEffect(() => {
+                localStorage.setItem('mathGamePlayers', JSON.stringify(localData));
+            }, [localData]);
+
+            useEffect(() => {
+                if (gameState === 'playing' && timeLeft > 0) {
+                    const timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
+                    return () => clearTimeout(timer);
+                } else if (timeLeft === 0 && gameState === 'playing') {
+                    handleTimeout();
+                }
+            }, [timeLeft, gameState]);
 
             return (
                 <div className="min-h-screen bg-gradient-to-br from-purple-400 via-pink-400 to-yellow-400 flex items-center justify-center p-4">
@@ -576,7 +577,6 @@
                         {/* Game Screen */}
                         {gameState === 'playing' && (
                             <div className="text-center">
-                                {/* Header */}
                                 <div className="flex justify-between items-center mb-4">
                                     <div className="flex gap-1">
                                         {[...Array(3)].map((_, i) => (
@@ -591,7 +591,6 @@
                                     </div>
                                 </div>
 
-                                {/* Level Info */}
                                 <div className="mb-4">
                                     <div className="flex items-center justify-center gap-2 mb-2">
                                         <span className="text-2xl">{getCurrentLevelData().emoji}</span>
@@ -600,7 +599,6 @@
                                         </span>
                                     </div>
                                     
-                                    {/* Progress Bar */}
                                     <div className="w-full bg-gray-200 rounded-full h-3 mb-2">
                                         <div 
                                             className="bg-gradient-to-r from-green-400 to-blue-500 h-3 rounded-full transition-all duration-500"
@@ -612,7 +610,6 @@
                                     </div>
                                 </div>
 
-                                {/* Timer and Streak */}
                                 <div className="flex justify-between items-center mb-6">
                                     <div className="flex items-center gap-2">
                                         <Clock className="text-blue-500" size={18} />
@@ -627,14 +624,12 @@
                                     )}
                                 </div>
 
-                                {/* Question */}
                                 <div className="mb-6">
                                     <div className="text-3xl font-bold text-gray-800 mb-4 p-6 bg-gray-50 rounded-xl">
                                         {currentQuestion} = ?
                                     </div>
                                 </div>
 
-                                {/* Feedback */}
                                 {showFeedback && (
                                     <div className={`mb-4 p-4 rounded-xl font-bold text-lg ${
                                         showFeedback === 'correct' ? 'bg-green-100 text-green-800' :
@@ -647,9 +642,9 @@
                                     </div>
                                 )}
 
-                                {/* Input */}
                                 <div className="mb-6">
                                     <input
+                                        key={`level-${currentLevel}-q-${questionsInLevel}`}
                                         type="number"
                                         value={answer}
                                         onChange={(e) => setAnswer(e.target.value)}
@@ -661,7 +656,6 @@
                                     />
                                 </div>
 
-                                {/* Submit Button */}
                                 <button 
                                     onClick={checkAnswer}
                                     disabled={!answer || showFeedback !== ''}
