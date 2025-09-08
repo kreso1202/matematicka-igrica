@@ -208,8 +208,22 @@
 
             const generateQuestion = () => {
                 const levelData = getCurrentLevelData();
-                const operations = levelData.operations;
-                const operation = operations[Math.floor(Math.random() * operations.length)];
+                let operations = [...levelData.operations];
+                let operation;
+
+                // Use weights for higher levels to favor multiplication/division
+                if (levelData.multiplyWeight && Math.random() < levelData.multiplyWeight) {
+                    // Focus on multiplication and division
+                    const multiplyOps = operations.filter(op => op === '×' || op === '÷');
+                    if (multiplyOps.length > 0) {
+                        operation = multiplyOps[Math.floor(Math.random() * multiplyOps.length)];
+                    } else {
+                        operation = operations[Math.floor(Math.random() * operations.length)];
+                    }
+                } else {
+                    operation = operations[Math.floor(Math.random() * operations.length)];
+                }
+
                 let num1, num2, result, question;
 
                 switch (operation) {
@@ -218,42 +232,39 @@
                             num1 = Math.floor(Math.random() * levelData.maxNum) + 1;
                             num2 = Math.floor(Math.random() * levelData.maxNum) + 1;
                         } else {
-                            num1 = Math.floor(Math.random() * (levelData.maxNum / 2)) + 1;
-                            num2 = Math.floor(Math.random() * (levelData.maxNum / 2)) + 1;
+                            // Higher levels: smaller addition problems
+                            num1 = Math.floor(Math.random() * 30) + 1;
+                            num2 = Math.floor(Math.random() * 30) + 1;
                         }
                         result = num1 + num2;
                         question = `${num1} + ${num2}`;
                         break;
+                        
                     case '-':
                         if (levelData.id <= 2) {
                             num1 = Math.floor(Math.random() * levelData.maxNum) + 10;
                             num2 = Math.floor(Math.random() * num1) + 1;
                         } else {
-                            num1 = Math.floor(Math.random() * levelData.maxNum) + 20;
+                            // Higher levels: smaller subtraction problems
+                            num1 = Math.floor(Math.random() * 50) + 20;
                             num2 = Math.floor(Math.random() * (num1 - 10)) + 1;
                         }
                         result = num1 - num2;
                         question = `${num1} - ${num2}`;
                         break;
+                        
                     case '×':
-                        if (levelData.id === 3) {
-                            num1 = Math.floor(Math.random() * 10) + 1;
-                            num2 = Math.floor(Math.random() * 10) + 1;
-                        } else {
-                            num1 = Math.floor(Math.random() * 12) + 1;
-                            num2 = Math.floor(Math.random() * 12) + 1;
-                        }
+                        // Always use multiplication table up to 10×10
+                        num1 = Math.floor(Math.random() * 10) + 1;
+                        num2 = Math.floor(Math.random() * 10) + 1;
                         result = num1 * num2;
                         question = `${num1} × ${num2}`;
                         break;
+                        
                     case '÷':
-                        if (levelData.id === 4) {
-                            num2 = Math.floor(Math.random() * 10) + 1;
-                            result = Math.floor(Math.random() * 10) + 1;
-                        } else {
-                            num2 = Math.floor(Math.random() * 12) + 1;
-                            result = Math.floor(Math.random() * 12) + 1;
-                        }
+                        // Always use division table up to 10×10 (reverse of multiplication)
+                        num2 = Math.floor(Math.random() * 10) + 1;
+                        result = Math.floor(Math.random() * 10) + 1;
                         num1 = num2 * result;
                         question = `${num1} ÷ ${num2}`;
                         break;
