@@ -356,8 +356,8 @@
                     if (lives - (userAnswer !== correctAnswer ? 1 : 0) <= 0) {
                         endGame();
                     } else {
+                        setAnswer(''); // Reset input before new question
                         generateQuestion();
-                        setAnswer('');
                     }
                 }, 1500);
             };
