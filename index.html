@@ -737,12 +737,23 @@
                                 </div>
 
                                 {showFeedback && (
-                                    <div className={`mb-4 p-4 rounded-xl font-bold text-lg ${
+                                    <div className={`mb-4 p-4 rounded-xl font-bold text-lg relative overflow-hidden ${
                                         showFeedback === 'correct' ? 'bg-green-100 text-green-800' :
                                         showFeedback === 'wrong' ? 'bg-red-100 text-red-800' :
                                         'bg-orange-100 text-orange-800'
                                     }`}>
-                                        {showFeedback === 'correct' && '🎉 Odlično!'}
+                                        {showFeedback === 'correct' && (
+                                            <>
+                                                <div className="text-4xl mb-2 animate-bounce">🎉</div>
+                                                <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
+                                                    <div className="absolute top-2 left-4 text-yellow-400 animate-ping text-2xl">⭐</div>
+                                                    <div className="absolute top-3 right-6 text-yellow-400 animate-ping text-xl" style={{animationDelay: '0.1s'}}>✨</div>
+                                                    <div className="absolute top-1 left-1/2 text-yellow-400 animate-ping text-lg" style={{animationDelay: '0.2s'}}>💫</div>
+                                                    <div className="absolute top-4 right-4 text-yellow-400 animate-ping text-xl" style={{animationDelay: '0.3s'}}>🌟</div>
+                                                </div>
+                                                Odlično!
+                                            </>
+                                        )}
                                         {showFeedback === 'wrong' && `❌ Odgovor je ${correctAnswer}`}
                                         {showFeedback === 'timeout' && '⏰ Vrijeme je isteklo!'}
                                     </div>
