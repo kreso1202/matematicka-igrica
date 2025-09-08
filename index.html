@@ -966,6 +966,29 @@
                                 </div>
                             </div>
                         )}
+                        {/* Achievement Popup */}
+                        {showAchievement && (
+                            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                                <div className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-sm animate-bounce">
+                                    <div className="text-center">
+                                        <div className="text-6xl mb-4">{showAchievement.emoji}</div>
+                                        <h2 className="text-2xl font-bold text-purple-600 mb-2">
+                                            Postignuće otključano!
+                                        </h2>
+                                        <div className="bg-yellow-100 rounded-xl p-4 mb-4 border-2 border-yellow-400">
+                                            <div className="font-bold text-lg text-yellow-800">{showAchievement.name}</div>
+                                            <div className="text-sm text-yellow-700">{showAchievement.desc}</div>
+                                        </div>
+                                        <button 
+                                            onClick={() => setShowAchievement(null)}
+                                            className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold py-3 px-6 rounded-xl text-lg hover:scale-105 transform transition-all duration-200"
+                                        >
+                                            Super!
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             );
