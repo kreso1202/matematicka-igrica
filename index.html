@@ -363,14 +363,21 @@
             };
 
             const startGame = () => {
+                setIsTransitioning(true);
                 setGameState('playing');
                 setScore(0);
                 setLives(3);
                 setCurrentLevel(1);
                 setQuestionsInLevel(0);
                 setStreak(0);
+                setAnswer('');
+                setShowFeedback('');
                 setSessionStats({ correct: 0, wrong: 0, timeouts: 0 });
-                generateQuestion();
+                
+                setTimeout(() => {
+                    generateQuestion();
+                    setIsTransitioning(false);
+                }, 300);
             };
 
             const nextLevel = () => {
