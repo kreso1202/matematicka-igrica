@@ -13,7 +13,7 @@
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect, useRef } = React;
+        const { useState, useEffect } = React;
 
         // JsonBin Configuration
         const JSONBIN_CONFIG = {
@@ -93,32 +93,38 @@
             </svg>
         );
 
-        // Level definitions
+        // Level definitions with multiplication/division focus
         const LEVELS = [
             { id: 1, name: "Početnik", emoji: "🌱", operations: ['+', '-'], maxNum: 20, questionsNeeded: 10, timeLimit: 20 },
             { id: 2, name: "Istraživač", emoji: "🔍", operations: ['+', '-'], maxNum: 50, questionsNeeded: 15, timeLimit: 18 },
-            { id: 3, name: "Učenik", emoji: "📚", operations: ['+', '-', '×'], maxNum: 100, questionsNeeded: 20, timeLimit: 16 },
-            { id: 4, name: "Matematičar", emoji: "🧮", operations: ['+', '-', '×', '÷'], maxNum: 144, questionsNeeded: 25, timeLimit: 15 },
-            { id: 5, name: "Stručnjak", emoji: "🎓", operations: ['+', '-', '×', '÷'], maxNum: 200, questionsNeeded: 30, timeLimit: 14 },
-            { id: 6, name: "Majstor", emoji: "👑", operations: ['+', '-', '×', '÷'], maxNum: 500, questionsNeeded: 35, timeLimit: 13 },
-            { id: 7, name: "Genij", emoji: "🧠", operations: ['+', '-', '×', '÷'], maxNum: 1000, questionsNeeded: 40, timeLimit: 12 }
+            { id: 3, name: "Učenik", emoji: "📚", operations: ['+', '-', '×'], maxNum: 100, questionsNeeded: 20, timeLimit: 16, multiplyWeight: 0.4 },
+            { id: 4, name: "Matematičar", emoji: "🧮", operations: ['×', '÷', '+'], maxNum: 100, questionsNeeded: 25, timeLimit: 15, multiplyWeight: 0.6 },
+            { id: 5, name: "Stručnjak", emoji: "🎓", operations: ['×', '÷', '+', '-'], maxNum: 100, questionsNeeded: 30, timeLimit: 14, multiplyWeight: 0.7 },
+            { id: 6, name: "Majstor", emoji: "👑", operations: ['×', '÷', '+', '-'], maxNum: 100, questionsNeeded: 35, timeLimit: 13, multiplyWeight: 0.8 },
+            { id: 7, name: "Genij", emoji: "🧠", operations: ['×', '÷', '+', '-'], maxNum: 100, questionsNeeded: 40, timeLimit: 12, multiplyWeight: 0.9 }
         ];
 
         const MathGame = () => {
-            // All state variables
+            // Game state
             const [gameState, setGameState] = useState('welcome');
             const [playerName, setPlayerName] = useState('');
+            
+            // Question state
             const [currentQuestion, setCurrentQuestion] = useState('');
             const [answer, setAnswer] = useState('');
             const [correctAnswer, setCorrectAnswer] = useState(0);
+            const [showFeedback, setShowFeedback] = useState('');
+            
+            // Game progress
             const [score, setScore] = useState(0);
             const [timeLeft, setTimeLeft] = useState(20);
             const [lives, setLives] = useState(3);
             const [currentLevel, setCurrentLevel] = useState(1);
             const [questionsInLevel, setQuestionsInLevel] = useState(0);
             const [streak, setStreak] = useState(0);
-            const [showFeedback, setShowFeedback] = useState('');
             const [sessionStats, setSessionStats] = useState({ correct: 0, wrong: 0, timeouts: 0 });
+            
+            // UI state
             const [isOnline, setIsOnline] = useState(true);
             const [isLoading, setIsLoading] = useState(false);
 
@@ -232,7 +238,6 @@
                             num1 = Math.floor(Math.random() * levelData.maxNum) + 1;
                             num2 = Math.floor(Math.random() * levelData.maxNum) + 1;
                         } else {
-                            // Higher levels: smaller addition problems
                             num1 = Math.floor(Math.random() * 30) + 1;
                             num2 = Math.floor(Math.random() * 30) + 1;
                         }
@@ -245,7 +250,6 @@
                             num1 = Math.floor(Math.random() * levelData.maxNum) + 10;
                             num2 = Math.floor(Math.random() * num1) + 1;
                         } else {
-                            // Higher levels: smaller subtraction problems
                             num1 = Math.floor(Math.random() * 50) + 20;
                             num2 = Math.floor(Math.random() * (num1 - 10)) + 1;
                         }
@@ -254,7 +258,6 @@
                         break;
                         
                     case '×':
-                        // Always use multiplication table up to 10×10
                         num1 = Math.floor(Math.random() * 10) + 1;
                         num2 = Math.floor(Math.random() * 10) + 1;
                         result = num1 * num2;
@@ -262,7 +265,6 @@
                         break;
                         
                     case '÷':
-                        // Always use division table up to 10×10 (reverse of multiplication)
                         num2 = Math.floor(Math.random() * 10) + 1;
                         result = Math.floor(Math.random() * 10) + 1;
                         num1 = num2 * result;
@@ -286,6 +288,13 @@
                 setShowFeedback('');
                 setSessionStats({ correct: 0, wrong: 0, timeouts: 0 });
                 generateQuestion();
+                
+                setTimeout(() => {
+                    const input = document.querySelector('input[type="number"]');
+                    if (input) {
+                        input.focus();
+                    }
+                }, 300);
             };
 
             const nextLevel = () => {
@@ -297,6 +306,12 @@
                 setGameState('playing');
                 setTimeout(() => {
                     generateQuestion();
+                    setTimeout(() => {
+                        const input = document.querySelector('input[type="number"]');
+                        if (input) {
+                            input.focus();
+                        }
+                    }, 200);
                 }, 100);
             };
 
@@ -333,6 +348,13 @@
                         setShowFeedback('');
                         setAnswer('');
                         generateQuestion();
+                        setTimeout(() => {
+                            const input = document.querySelector('input[type="number"]');
+                            if (input) {
+                                input.focus();
+                                input.select();
+                            }
+                        }, 100);
                     }, 1500);
                 } else {
                     setLives(lives - 1);
@@ -347,6 +369,13 @@
                         } else {
                             setAnswer('');
                             generateQuestion();
+                            setTimeout(() => {
+                                const input = document.querySelector('input[type="number"]');
+                                if (input) {
+                                    input.focus();
+                                    input.select();
+                                }
+                            }, 100);
                         }
                     }, 1500);
                 }
@@ -364,6 +393,13 @@
                     } else {
                         setAnswer('');
                         generateQuestion();
+                        setTimeout(() => {
+                            const input = document.querySelector('input[type="number"]');
+                            if (input) {
+                                input.focus();
+                                input.select();
+                            }
+                        }, 100);
                     }
                 }, 1500);
             };
@@ -419,7 +455,7 @@
                 const allPlayers = getAllPlayers();
                 return Object.values(allPlayers)
                     .sort((a, b) => b.bestScore - a.bestScore)
-                    .slice(0, 10);
+                    .slice(0, 20);
             };
 
             const getLevelProgress = () => {
@@ -461,7 +497,6 @@
                 }
             }, [timeLeft, gameState]);
 
-            // Focus input when question changes
             useEffect(() => {
                 if (gameState === 'playing' && currentQuestion && !showFeedback) {
                     const timer = setTimeout(() => {
@@ -511,7 +546,7 @@
                         {gameState === 'welcome' && (
                             <div className="text-center">
                                 <div className="mb-6">
-                                    <h1 className="text-4xl font-bold text-purple-600 mb-2">🧮 Matematička Igrica v2.0</h1>
+                                    <h1 className="text-4xl font-bold text-purple-600 mb-2">🧮 Matematička Igrica v2.1</h1>
                                     <p className="text-gray-600">
                                         {isJsonBinConfigured() ? 'Dobrodošli u online natjecanje!' : 'Dobrodošli u svijet brojeva!'}
                                     </p>
@@ -595,88 +630,6 @@
                                         👤 Promijeni ime
                                     </button>
                                 </div>
-                            </div>
-                        )}
-
-                        {/* Achievements Screen */}
-                        {gameState === 'achievements' && (
-                            <div className="text-center">
-                                <div className="mb-6">
-                                    <h2 className="text-3xl font-bold text-purple-600 mb-4">Postignuća</h2>
-                                    <p className="text-gray-600">Vaši uspjesi u učenju matematike</p>
-                                </div>
-
-                                {(() => {
-                                    const playerData = getCurrentPlayerData();
-                                    const playerAchievements = playerData.achievements || [];
-                                    
-                                    return (
-                                        <div className="mb-6 max-h-80 overflow-y-auto space-y-3">
-                                            {ACHIEVEMENTS.map((achievement, index) => {
-                                                const isUnlocked = playerAchievements.includes(achievement.id);
-                                                return (
-                                                    <div key={index} className={`p-4 rounded-xl border-2 ${
-                                                        isUnlocked 
-                                                            ? 'bg-green-100 border-green-400' 
-                                                            : 'bg-gray-100 border-gray-300 opacity-60'
-                                                    }`}>
-                                                        <div className="flex items-center gap-4">
-                                                            <div className="text-3xl">
-                                                                {isUnlocked ? achievement.emoji : '🔒'}
-                                                            </div>
-                                                            <div className="flex-1 text-left">
-                                                                <div className={`font-bold ${
-                                                                    isUnlocked ? 'text-green-800' : 'text-gray-600'
-                                                                }`}>
-                                                                    {achievement.name}
-                                                                </div>
-                                                                <div className={`text-sm ${
-                                                                    isUnlocked ? 'text-green-700' : 'text-gray-500'
-                                                                }`}>
-                                                                    {achievement.desc}
-                                                                </div>
-                                                            </div>
-                                                            {isUnlocked && (
-                                                                <div className="text-green-600 font-bold">
-                                                                    ✓
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    );
-                                })()}
-
-                                <div className="bg-blue-100 rounded-xl p-4 mb-6">
-                                    <div className="text-lg font-bold text-blue-800 mb-2">
-                                        Napredak: {(() => {
-                                            const playerData = getCurrentPlayerData();
-                                            const unlockedCount = (playerData.achievements || []).length;
-                                            return `${unlockedCount}/${ACHIEVEMENTS.length}`;
-                                        })()} postignuća
-                                    </div>
-                                    <div className="w-full bg-blue-200 rounded-full h-3">
-                                        <div 
-                                            className="bg-blue-600 h-3 rounded-full transition-all duration-500"
-                                            style={{ 
-                                                width: `${(() => {
-                                                    const playerData = getCurrentPlayerData();
-                                                    const unlockedCount = (playerData.achievements || []).length;
-                                                    return (unlockedCount / ACHIEVEMENTS.length) * 100;
-                                                })()}%` 
-                                            }}
-                                        ></div>
-                                    </div>
-                                </div>
-
-                                <button 
-                                    onClick={() => setGameState('menu')}
-                                    className="w-full bg-gray-500 text-white font-bold py-3 px-6 rounded-xl text-lg hover:scale-105 transform transition-all duration-200"
-                                >
-                                    Povratak
-                                </button>
                             </div>
                         )}
 
@@ -963,29 +916,6 @@
                                     >
                                         🏠 Povratak
                                     </button>
-                                </div>
-                            </div>
-                        )}
-                        {/* Achievement Popup */}
-                        {showAchievement && (
-                            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                                <div className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-sm animate-bounce">
-                                    <div className="text-center">
-                                        <div className="text-6xl mb-4">{showAchievement.emoji}</div>
-                                        <h2 className="text-2xl font-bold text-purple-600 mb-2">
-                                            Postignuće otključano!
-                                        </h2>
-                                        <div className="bg-yellow-100 rounded-xl p-4 mb-4 border-2 border-yellow-400">
-                                            <div className="font-bold text-lg text-yellow-800">{showAchievement.name}</div>
-                                            <div className="text-sm text-yellow-700">{showAchievement.desc}</div>
-                                        </div>
-                                        <button 
-                                            onClick={() => setShowAchievement(null)}
-                                            className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold py-3 px-6 rounded-xl text-lg hover:scale-105 transform transition-all duration-200"
-                                        >
-                                            Super!
-                                        </button>
-                                    </div>
                                 </div>
                             </div>
                         )}
